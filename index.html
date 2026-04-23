@@ -8,6 +8,8 @@
     <!-- Library เป็น jsPDF และ AutoTable -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- เพิ่ม LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -953,13 +955,13 @@
             <h3 class="text-xl font-bold text-slate-800 mb-6">ดำเนินการกับข้อมูล</h3>
             
             <div class="grid grid-cols-3 gap-3 mb-4">
-                <button onclick="exportTableToPDF('share'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#00B900]/10 rounded-2xl border border-[#00B900]/20 active:scale-95 transition-all shadow-sm hover:bg-[#00B900]/20">
+                <button onclick="exportTableToPDF('sendToLineChat'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#00B900]/10 rounded-2xl border border-[#00B900]/20 active:scale-95 transition-all shadow-sm hover:bg-[#00B900]/20">
                     <i class="fab fa-line text-[#00B900] text-2xl"></i>
-                    <span class="text-[10px] font-bold text-[#00B900] uppercase tracking-wider mt-1">ส่ง LINE (PDF)</span>
+                    <span class="text-[10px] font-bold text-[#00B900] uppercase tracking-wider mt-1">ส่งเข้าแชท</span>
                 </button>
                 <button onclick="exportTableToPDF('share'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#0084FF]/10 rounded-2xl border border-[#0084FF]/20 active:scale-95 transition-all shadow-sm hover:bg-[#0084FF]/20">
                     <i class="fab fa-facebook-messenger text-[#0084FF] text-2xl"></i>
-                    <span class="text-[10px] font-bold text-[#0084FF] uppercase tracking-wider mt-1">ส่ง Messenger (PDF)</span>
+                    <span class="text-[10px] font-bold text-[#0084FF] uppercase tracking-wider mt-1">แชร์/ส่งต่อ</span>
                 </button>
                 <button onclick="exportTableToPDF('print'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-slate-100 rounded-2xl border border-slate-200 active:scale-95 transition-all shadow-sm hover:bg-slate-200">
                     <i class="fas fa-print text-slate-600 text-2xl"></i>
@@ -1018,7 +1020,30 @@
         </div>
     </div>
 
+    <!-- Modal แจ้งเตือนเปิดผ่าน LINE -->
+    <div id="liffWarningModal" class="fixed inset-0 z-[800] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-[30px] p-6 text-center shadow-2xl w-full max-w-sm transform scale-95 transition-transform duration-300">
+            <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fab fa-line text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">ใช้งานผ่านแอป LINE</h3>
+            <p class="text-sm text-slate-600 mb-6 leading-relaxed">
+                แอป LINE ไม่อนุญาตให้ดาวน์โหลดไฟล์ PDF โดยตรง<br><br>
+                กรุณากดที่ไอคอน <strong class="text-slate-800">3 จุด (⋮) หรือ (⋯)</strong> มุมขวาบน<br>แล้วเลือก <strong class="text-slate-800">"เปิดในเบราว์เซอร์เริ่มต้น"</strong><br>(Open in Browser) เพื่อดาวน์โหลด
+            </p>
+            <button onclick="closePopup('liffWarningModal')" class="w-full bg-slate-100 text-slate-700 p-4 rounded-2xl font-bold active:scale-95 transition-all text-sm hover:bg-slate-200">
+                เข้าใจแล้ว
+            </button>
+        </div>
+    </div>
+
     <script>
+        // ==========================================
+        // ตั้งค่าระบบ LINE LIFF & Webhook
+        // ==========================================
+        const LIFF_ID = "2009833376-ZabcbT7t"; // ใส่ LIFF ID ของคุณ (ตัวอย่าง: 165xxxxxxxx-xxxxxxx)
+        const LIFF_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbysN-YHxoqNf-_MSYKVk1nW0LhmgCtk6hg56N9gMK6B_2waByw_YwV-uTkalcLPitYC/exec"; // ใส่ URL ของ Google Apps Script ที่ Deploy เสร็จแล้ว
+
         const setText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
         const formatNum = (num) => { const rounded = Math.round(num * 100) / 100; return Number.isInteger(rounded) ? rounded.toLocaleString() : rounded.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); };
         let currentPlan = '20CX', currentGender = 'male', lastCalculationData = null, currentMode = 'sum';
@@ -1597,7 +1622,7 @@ A90/20,Female,64,11,415.0`;
             // แจ้งเตือนกำลังสร้าง
             const toast = document.createElement('div'); 
             toast.className = "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-900 text-white px-8 py-5 rounded-2xl text-sm font-bold z-[1000] shadow-2xl text-center backdrop-blur-sm transition-all"; 
-            toast.innerHTML = `<i class='fas fa-spinner fa-spin mb-3 block text-3xl'></i><span>กำลังประมวลผล PDF...</span>`; 
+            toast.innerHTML = `<i class='fas fa-spinner fa-spin mb-3 block text-3xl'></i><span id="pdfToastText">กำลังประมวลผล PDF...</span>`; 
             document.body.appendChild(toast); 
 
             try {
@@ -1739,7 +1764,42 @@ A90/20,Female,64,11,415.0`;
                 const fileName = `CI_Extra_Plus_ตารางมูลค่า_อายุ${d.age}.pdf`;
                 const isLineApp = /Line/i.test(navigator.userAgent);
 
-                if (actionType === 'print') {
+                if (actionType === 'sendToLineChat') {
+                    if (typeof liff === 'undefined' || !liff.isInClient()) {
+                        showCustomError("ฟังก์ชันนี้รองรับเฉพาะการเปิดผ่านแอป LINE เท่านั้น");
+                        return;
+                    }
+                    if (!LIFF_WEBHOOK_URL) {
+                        showCustomError("ยังไม่ได้ตั้งค่า Webhook สำหรับส่งไฟล์");
+                        return;
+                    }
+                    
+                    document.getElementById('pdfToastText').innerText = "กำลังอัปโหลดและส่งเข้าแชท...";
+                    const profile = await liff.getProfile();
+                    const pdfBase64 = doc.output('datauristring').split(',')[1];
+                    
+                    const res = await fetch(LIFF_WEBHOOK_URL, {
+                        method: 'POST',
+                        redirect: 'follow', // ช่วยรองรับระบบของ Google Apps Script
+                        body: JSON.stringify({
+                            userId: profile.userId,
+                            fileName: fileName,
+                            fileData: pdfBase64
+                        })
+                    });
+                    
+                    const result = await res.json();
+                    if (result.status === 'success') {
+                        const successToast = document.createElement('div');
+                        successToast.className = "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-emerald-600 text-white px-8 py-5 rounded-2xl text-sm font-bold z-[1000] shadow-2xl text-center backdrop-blur-sm transition-all";
+                        successToast.innerHTML = `<i class='fas fa-check-circle mb-3 block text-3xl'></i><span>ส่งไฟล์เข้าแชทสำเร็จ!</span>`;
+                        document.body.appendChild(successToast);
+                        setTimeout(() => { successToast.style.opacity = '0'; setTimeout(() => successToast.remove(), 300); }, 2500);
+                    } else {
+                        throw new Error(result.message || "Upload failed");
+                    }
+                } else if (actionType === 'print') {
+                    if (isLineApp) { openPopup('liffWarningModal'); return; }
                     doc.autoPrint();
                     const pdfBlobUrl = doc.output('bloburl');
                     window.open(pdfBlobUrl, '_blank');
@@ -1747,6 +1807,7 @@ A90/20,Female,64,11,415.0`;
                     const pdfBlob = doc.output('blob');
                     const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
                     
+                    // บนมือถือบางรุ่น LINE อนุญาตให้ใช้ Web Share API ได้ (เด้งหน้าต่างแชร์ของเครื่อง)
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         try {
                             await navigator.share({
@@ -1759,7 +1820,7 @@ A90/20,Female,64,11,415.0`;
                         }
                     } else {
                         if (isLineApp) {
-                            showCustomError("แอป LINE ไม่รองรับการแชร์ไฟล์ตรงๆ กรุณากดบันทึก PDF แทน");
+                            openPopup('liffWarningModal');
                         } else {
                             showCustomError("เบราว์เซอร์ไม่รองรับการแชร์ไฟล์ ระบบจะทำการดาวน์โหลดแทน");
                             doc.save(fileName);
@@ -1768,14 +1829,8 @@ A90/20,Female,64,11,415.0`;
                 } else {
                     // การบันทึก PDF
                     if (isLineApp) {
-                        // ปรับปรุงการทำงานบน LIFF (LINE In-App Browser)
-                        showCustomError("บนแอป LINE กรุณากดมุมขวาบน (3 จุด) เลือก 'เปิดในเบราว์เซอร์' (Open in Browser) เพื่อบันทึก PDF ลงเครื่อง");
-                        setTimeout(() => {
-                            try { doc.save(fileName); } catch(e){}
-                            // เปิดไฟล์ให้ดูในหน้าต่าง (Fallback สำหรับระบบที่บล็อกการดาวน์โหลด)
-                            const dataUri = doc.output('datauristring');
-                            window.location.href = dataUri;
-                        }, 3500);
+                        // หากเปิดใน LINE In-App Browser ให้เด้ง Modal แจ้งเตือน
+                        openPopup('liffWarningModal');
                     } else {
                         // การบันทึก PDF สำหรับเบราว์เซอร์ปกติ (Chrome, Safari, ฯลฯ)
                         doc.save(fileName);
@@ -2420,12 +2475,22 @@ A90/20,Female,64,11,415.0`;
             if (e.target.closest('button, input, select, textarea, a, .clickable-row, .interactive-btn')) return;
         }
 
-        window.onload = () => { 
+        window.onload = async () => { 
             document.querySelectorAll('[id$="Modal"]').forEach(modal => {
                 if (modal.classList.contains('fixed') && modal.classList.contains('opacity-0')) {
                     modal.classList.add('hidden');
                 }
             });
+
+            // เริ่มต้นระบบ LIFF อัตโนมัติ (หากตั้งค่า LIFF_ID ไว้)
+            if (typeof liff !== 'undefined' && LIFF_ID) {
+                try {
+                    await liff.init({ liffId: LIFF_ID });
+                } catch(e) {
+                    console.error('LIFF Init Error:', e);
+                }
+            }
+
             // โหลดข้อมูล CV จาก Github หรือใช้ตัวสำรอง
             fetchCVData();
             calculate('sum'); 

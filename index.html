@@ -953,17 +953,17 @@
             <h3 class="text-xl font-bold text-slate-800 mb-6">ดำเนินการกับข้อมูล</h3>
             
             <div class="grid grid-cols-3 gap-3 mb-4">
-                <button onclick="shareResult('all', 'line'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#00B900]/10 rounded-2xl border border-[#00B900]/20 active:scale-95 transition-all shadow-sm hover:bg-[#00B900]/20">
+                <button onclick="shareResult('table', 'line'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#00B900]/10 rounded-2xl border border-[#00B900]/20 active:scale-95 transition-all shadow-sm hover:bg-[#00B900]/20">
                     <i class="fab fa-line text-[#00B900] text-2xl"></i>
                     <span class="text-[10px] font-bold text-[#00B900] uppercase tracking-wider mt-1">LINE</span>
                 </button>
-                <button onclick="shareResult('all', 'messenger'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#0084FF]/10 rounded-2xl border border-[#0084FF]/20 active:scale-95 transition-all shadow-sm hover:bg-[#0084FF]/20">
+                <button onclick="shareResult('table', 'messenger'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#0084FF]/10 rounded-2xl border border-[#0084FF]/20 active:scale-95 transition-all shadow-sm hover:bg-[#0084FF]/20">
                     <i class="fab fa-facebook-messenger text-[#0084FF] text-2xl"></i>
                     <span class="text-[10px] font-bold text-[#0084FF] uppercase tracking-wider mt-1">Messenger</span>
                 </button>
                 <button onclick="exportTableToPDF('print'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-slate-100 rounded-2xl border border-slate-200 active:scale-95 transition-all shadow-sm hover:bg-slate-200">
                     <i class="fas fa-print text-slate-600 text-2xl"></i>
-                    <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mt-1">พิมพ์</span>
+                    <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mt-1">พิมพ์ PDF</span>
                 </button>
             </div>
             
@@ -1643,68 +1643,70 @@ A90/20,Female,64,11,415.0`;
                     }
                 });
 
-                // แบ่งข้อมูลเป็นหน้าละ 50 บรรทัด
-                const rowsPerPage = 50;
-                
-                for (let i = 0; i < tableRows.length; i += rowsPerPage) {
-                    const chunk = tableRows.slice(i, i + rowsPerPage);
-                    
-                    if (i > 0) {
-                        doc.addPage();
-                    }
-
-                    // จัดการส่วนหัวของกระดาษ (Header) แบบมีพื้นหลังแบนเนอร์
-                    doc.setFillColor(30, 58, 138); // สีกรมท่า (blue-900)
-                    doc.rect(0, 0, 210, 26, 'F'); // แถบด้านบนให้แคบลงนิดนึง
-
-                    doc.setFont(fontName, 'bold');
-                    doc.setFontSize(22);
-                    doc.setTextColor(255, 255, 255); // สีขาว
-                    doc.text('ตารางมูลค่ากรมธรรม์ CI Extra Plus', 105, 17, { align: 'center' });
-                    
-                    // สร้างตารางด้วย AutoTable สำหรับก้อนปัจจุบัน (Chunk)
-                    doc.autoTable({
-                        startY: 30, // เริ่มให้ชิดขึ้นเพื่อประหยัดพื้นที่
-                        head: [['อายุ', 'เงินออมรายปี', 'เงินออมสะสม', 'เงินสดพร้อมใช้']],
-                        body: chunk,
-                        theme: 'grid',
-                        styles: { 
-                            font: fontName, 
-                            fontSize: 10.5, // เล็กลงนิดหน่อยเพื่อให้จุได้ 50 บรรทัด
-                            halign: 'center',
-                            valign: 'middle',
-                            cellPadding: 1.5, // ลด Padding
-                            lineColor: [226, 232, 240], // slate-200
-                            lineWidth: 0.1,
-                            minCellHeight: 4.8 // บังคับความสูงเพื่อให้ 50 บรรทัดอยู่ในหนึ่งหน้า A4 พอดี
-                        },
-                        headStyles: { 
-                            fillColor: [30, 64, 175], // blue-800
-                            textColor: [255, 255, 255], // ขาว
-                            fontStyle: 'bold',
-                            fontSize: 12,
-                            minCellHeight: 8
-                        },
-                        bodyStyles: { 
-                            textColor: [51, 65, 85] // slate-700
-                        },
-                        alternateRowStyles: {
-                            fillColor: [248, 250, 252] // slate-50
-                        },
-                        didParseCell: function (data) {
-                            // ไฮไลต์บรรทัดจุดคุ้มทุน (ต้องคำนวณ Index รวมของทุกหน้า)
-                            const globalIndex = i + data.row.index;
-                            if (globalIndex === beRowIndex && data.section === 'body') {
-                                data.cell.styles.fillColor = [16, 185, 129]; // emerald-500
-                                data.cell.styles.textColor = [255, 255, 255]; // สีขาว
-                                data.cell.styles.fontStyle = 'bold';
-                            } else if (data.section === 'body' && data.column.index === 3) {
-                                data.cell.styles.textColor = [217, 119, 6]; // amber-600
+                // ใช้ autoTable รวดเดียว ให้มันแบ่งหน้าอัตโนมัติ (จะได้ตารางติดกัน ไม่ตัดขาด)
+                doc.autoTable({
+                    startY: 28, // เริ่มใต้ Header กระดาษ
+                    head: [['อายุ', 'เงินออมรายปี', 'เงินออมสะสม', 'เงินสดพร้อมใช้']],
+                    body: tableRows,
+                    theme: 'plain', // ใช้แบบ plain เพื่อตีเส้นเองให้เหมือนในหน้าเว็บ
+                    margin: { top: 28, bottom: 15, left: 15, right: 15 },
+                    styles: { 
+                        font: fontName, 
+                        fontSize: 10,
+                        halign: 'center',
+                        valign: 'middle',
+                        cellPadding: 1.5,
+                        minCellHeight: 4.8 // ความสูงเซลล์ เพื่อให้ได้ประมาณ 50 แถวต่อหน้า A4
+                    },
+                    headStyles: { 
+                        fillColor: [248, 250, 252], // bg-slate-50
+                        textColor: [100, 116, 139], // slate-500
+                        fontStyle: 'bold',
+                        lineWidth: { top: 0, bottom: 0.1, left: 0, right: 0 },
+                        lineColor: [226, 232, 240] // border-slate-200
+                    },
+                    bodyStyles: { 
+                        textColor: [71, 85, 105], // slate-600
+                        lineWidth: { top: 0, bottom: 0.1, left: 0, right: 0 },
+                        lineColor: [241, 245, 249] // slate-100
+                    },
+                    didParseCell: function (data) {
+                        // สีข้อความใน Header ให้เหมือนหน้าเว็บ
+                        if (data.section === 'head') {
+                            if (data.column.index === 2) data.cell.styles.textColor = [37, 99, 235]; // text-blue-600
+                            if (data.column.index === 3) data.cell.styles.textColor = [217, 119, 6]; // text-amber-600
+                        }
+                        
+                        // สีข้อความใน Body ให้เหมือน UI
+                        if (data.section === 'body') {
+                            if (data.column.index === 0) data.cell.styles.fontStyle = 'bold'; // อายุ
+                            if (data.column.index === 2) data.cell.styles.textColor = [37, 99, 235]; // text-blue-600
+                            if (data.column.index === 3) {
+                                data.cell.styles.textColor = [217, 119, 6]; // text-amber-600
                                 data.cell.styles.fontStyle = 'bold';
                             }
+
+                            // แถวเป้าหมาย (Breakeven)
+                            if (showBreakeven && data.row.index === beRowIndex) {
+                                data.cell.styles.fillColor = [236, 253, 245]; // bg-emerald-50
+                                data.cell.styles.textColor = [6, 95, 70]; // text-[#065f46]
+                                data.cell.styles.fontStyle = 'bold';
+                                data.cell.styles.lineWidth = { top: 0.3, bottom: 0.3, left: 0, right: 0 };
+                                data.cell.styles.lineColor = [16, 185, 129]; // border-emerald-500
+                            }
                         }
-                    });
-                }
+                    },
+                    didDrawPage: function (data) {
+                        // จัดการส่วนหัวของกระดาษ (Header) แบบมีพื้นหลังแบนเนอร์ ในทุกๆ หน้า
+                        doc.setFillColor(30, 58, 138); // สีกรมท่า (blue-900)
+                        doc.rect(0, 0, 210, 20, 'F');
+
+                        doc.setFont(fontName, 'bold');
+                        doc.setFontSize(16);
+                        doc.setTextColor(255, 255, 255); // สีขาว
+                        doc.text('CI Extra Plus', 105, 13, { align: 'center' });
+                    }
+                });
 
                 // เพิ่มส่วนท้าย (Footer) ระบุหมายเลขหน้า และเส้นคั่นตกแต่ง สำหรับทุกๆ หน้า
                 const pageCount = doc.internal.getNumberOfPages();
@@ -2016,7 +2018,7 @@ A90/20,Female,64,11,415.0`;
         function handleGenericShare(platform) {
             if (currentShareType === 'diseaseList') {
                 shareDiseaseList(platform);
-            } else if (currentShareType === 'premium' || currentShareType === 'all') {
+            } else if (currentShareType === 'premium' || currentShareType === 'all' || currentShareType === 'table') {
                 if (platform === 'copy') {
                     handleCopyAndClose(currentShareType);
                 } else {
@@ -2043,6 +2045,38 @@ A90/20,Female,64,11,415.0`;
         function generateResultText(type) {
             if (!lastCalculationData) return '';
             const d = lastCalculationData;
+            
+            if (type === 'table') {
+                const sumStr = formatNum(d.sum); 
+                let text = `📊 ตารางมูลค่า CI Extra Plus\nเพศ${d.gender} อายุ ${d.age} ปี\nออม ${Math.round(d.premium).toLocaleString()} บ./ปี (${d.years} ปี)\nทุน ${sumStr} บ.\n\n`; 
+                
+                const tableBody = document.getElementById('policyTableBody');
+                const beRow = tableBody.querySelector('.breakeven-target');
+                if (beRow) {
+                    const tds = beRow.querySelectorAll('td');
+                    const beAge = tds[0].innerText.trim();
+                    text += `🎯 จุดคุ้มทุน ปีที่ ${beAge - d.age} (อายุ ${beAge} ปี)\nพร้อมใช้ ${tds[3].innerText} บ.\n\n`;
+                } else {
+                    text += `ℹ️ ไม่พบจุดคุ้มทุนก่อนครบกำหนดสัญญา\n\n`;
+                }
+                
+                text += `📌 ตัวอย่างมูลค่า:\n`;
+                const trs = tableBody.querySelectorAll('tr');
+                const maxYear = 90 - d.age;
+                const payYears = parseInt(d.years);
+                const milestones = [payYears, payYears + 10, maxYear];
+                let addedYears = new Set();
+                trs.forEach((tr, idx) => {
+                    const year = idx + 1;
+                    if (milestones.includes(year) && !addedYears.has(year)) {
+                        const tds = tr.querySelectorAll('td');
+                        text += `ปีที่ ${year} (อายุ ${tds[0].innerText.trim()}): ${tds[3].innerText} บ.\n`;
+                        addedYears.add(year);
+                    }
+                });
+                return text;
+            }
+
             if (type === 'premium') return `${Math.round(d.premium).toLocaleString()}`;
             
             const sumStr = formatNum(d.sum); 

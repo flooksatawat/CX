@@ -1736,13 +1736,15 @@ A90/20,Female,64,11,415.0`;
                 }
 
                 // เลือกการดำเนินการ (บันทึก, สั่งพิมพ์ หรือ แชร์เป็นไฟล์)
+                const fileName = `CI_Extra_Plus_ตารางมูลค่า_อายุ${d.age}.pdf`;
+
                 if (actionType === 'print') {
                     doc.autoPrint();
                     const pdfBlobUrl = doc.output('bloburl');
                     window.open(pdfBlobUrl, '_blank');
                 } else if (actionType === 'share') {
                     const pdfBlob = doc.output('blob');
-                    const file = new File([pdfBlob], `CI_Extra_Plus_ตารางมูลค่า_อายุ${d.age}.pdf`, { type: 'application/pdf' });
+                    const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
                     
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         navigator.share({
@@ -1752,10 +1754,29 @@ A90/20,Female,64,11,415.0`;
                         }).catch(err => console.log('Share failed:', err));
                     } else {
                         showCustomError("เบราว์เซอร์ไม่รองรับการแชร์ไฟล์โดยตรง ระบบจะทำการดาวน์โหลดแทน");
-                        doc.save(`CI_Extra_Plus_ตารางมูลค่า_อายุ${d.age}.pdf`);
+                        // Fallback สำหรับการ Share ที่ไม่รองรับ (ปรับให้รองรับ LIFF มากขึ้น)
+                        const url = URL.createObjectURL(pdfBlob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = fileName;
+                        a.target = '_blank';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
                     }
                 } else {
-                    doc.save(`CI_Extra_Plus_ตารางมูลค่า_อายุ${d.age}.pdf`);
+                    // การบันทึก PDF ปกติ (ปรับให้รองรับ LIFF/In-App Browser โดยการจำลองคลิก)
+                    const pdfBlob = doc.output('blob');
+                    const url = URL.createObjectURL(pdfBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    a.target = '_blank';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
                 }
 
             } catch (error) {
@@ -2194,7 +2215,7 @@ A90/20,Female,64,11,415.0`;
         }
 
         // --- ตั้งค่า Gemini API สำหรับดึงข้อมูลเรียลไทม์ ---
-        const apiKey = "";
+        const apiKey = "AIzaSyBlGHKpNuoWvnjBlI-MhNSGdwdkfSp79ZQ";
 
         async function fetchGeminiData(prompt) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;

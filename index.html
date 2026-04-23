@@ -1737,6 +1737,7 @@ A90/20,Female,64,11,415.0`;
 
                 // เลือกการดำเนินการ (บันทึก, สั่งพิมพ์ หรือ แชร์เป็นไฟล์)
                 const fileName = `CI_Extra_Plus_ตารางมูลค่า_อายุ${d.age}.pdf`;
+                const isLineApp = /Line/i.test(navigator.userAgent);
 
                 if (actionType === 'print') {
                     doc.autoPrint();
@@ -1747,36 +1748,38 @@ A90/20,Female,64,11,415.0`;
                     const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
                     
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        navigator.share({
-                            files: [file],
-                            title: 'ตารางมูลค่า CI Extra Plus',
-                            text: 'ตารางมูลค่า CI Extra Plus'
-                        }).catch(err => console.log('Share failed:', err));
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: 'ตารางมูลค่า CI Extra Plus',
+                                text: 'ตารางมูลค่า CI Extra Plus'
+                            });
+                        } catch(err) {
+                            console.log('Share failed:', err);
+                        }
                     } else {
-                        showCustomError("เบราว์เซอร์ไม่รองรับการแชร์ไฟล์โดยตรง ระบบจะทำการดาวน์โหลดแทน");
-                        // Fallback สำหรับการ Share ที่ไม่รองรับ (ปรับให้รองรับ LIFF มากขึ้น)
-                        const url = URL.createObjectURL(pdfBlob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = fileName;
-                        a.target = '_blank';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        if (isLineApp) {
+                            showCustomError("แอป LINE ไม่รองรับการแชร์ไฟล์ตรงๆ กรุณากดบันทึก PDF แทน");
+                        } else {
+                            showCustomError("เบราว์เซอร์ไม่รองรับการแชร์ไฟล์ ระบบจะทำการดาวน์โหลดแทน");
+                            doc.save(fileName);
+                        }
                     }
                 } else {
-                    // การบันทึก PDF ปกติ (ปรับให้รองรับ LIFF/In-App Browser โดยการจำลองคลิก)
-                    const pdfBlob = doc.output('blob');
-                    const url = URL.createObjectURL(pdfBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = fileName;
-                    a.target = '_blank';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    // การบันทึก PDF
+                    if (isLineApp) {
+                        // ปรับปรุงการทำงานบน LIFF (LINE In-App Browser)
+                        showCustomError("บนแอป LINE กรุณากดมุมขวาบน (3 จุด) เลือก 'เปิดในเบราว์เซอร์' (Open in Browser) เพื่อบันทึก PDF ลงเครื่อง");
+                        setTimeout(() => {
+                            try { doc.save(fileName); } catch(e){}
+                            // เปิดไฟล์ให้ดูในหน้าต่าง (Fallback สำหรับระบบที่บล็อกการดาวน์โหลด)
+                            const dataUri = doc.output('datauristring');
+                            window.location.href = dataUri;
+                        }, 3500);
+                    } else {
+                        // การบันทึก PDF สำหรับเบราว์เซอร์ปกติ (Chrome, Safari, ฯลฯ)
+                        doc.save(fileName);
+                    }
                 }
 
             } catch (error) {
@@ -2215,10 +2218,24 @@ A90/20,Female,64,11,415.0`;
         }
 
         // --- ตั้งค่า Gemini API สำหรับดึงข้อมูลเรียลไทม์ ---
-        const apiKey = "AIzaSyBlGHKpNuoWvnjBlI-MhNSGdwdkfSp79ZQ";
-
+        const apiKey = ""; // ห้ามลบหรือแก้ไขบรรทัดนี้: ระบบ Canvas จะแทรก API Key ชั่วคราวให้ที่นี่
+        const userApiKey = "AIzaSyBlGHKpNuoWvnjBlI-MhNSGdwdkfSp79ZQ"; // API Key ของคุณสำหรับการใช้งานบน Github
+        
         async function fetchGeminiData(prompt) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const isExternal = window.location.hostname.includes("github.io") || 
+                               window.location.hostname === "localhost" || 
+                               window.location.hostname === "127.0.0.1" || 
+                               window.location.protocol === "file:";
+
+            let url;
+            if (isExternal) {
+                // สำหรับ Github / Local จะใช้ API Key ของคุณ และโมเดลที่รองรับ Public Key
+                url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`;
+            } else {
+                // สำหรับระบบ Canvas บังคับให้ต้องใช้โครงสร้างนี้แบบเป๊ะๆ เพื่อให้ระบบแทรก Key ชั่วคราวให้
+                url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            }
+
             const payload = {
                 contents: [{ parts: [{ text: prompt }] }],
                 systemInstruction: { parts: [{ text: "คุณคือผู้เชี่ยวชาญด้านประกันสุขภาพและสถิติการแพทย์ในประเทศไทย ช่วยให้ข้อมูลสั้นๆ กระชับ รูปแบบ HTML น่าอ่าน เน้นความจริงจังแต่นำเสนอเข้าใจง่าย" }] }
@@ -2240,6 +2257,7 @@ A90/20,Female,64,11,415.0`;
                     }
                     return null;
                 } catch (e) {
+                    console.error("Gemini API Error:", e);
                     if (i === delays.length) return null;
                     await new Promise(r => setTimeout(r, delays[i]));
                 }

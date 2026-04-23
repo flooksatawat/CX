@@ -953,13 +953,13 @@
             <h3 class="text-xl font-bold text-slate-800 mb-6">ดำเนินการกับข้อมูล</h3>
             
             <div class="grid grid-cols-3 gap-3 mb-4">
-                <button onclick="shareResult('table', 'line'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#00B900]/10 rounded-2xl border border-[#00B900]/20 active:scale-95 transition-all shadow-sm hover:bg-[#00B900]/20">
+                <button onclick="exportTableToPDF('share'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#00B900]/10 rounded-2xl border border-[#00B900]/20 active:scale-95 transition-all shadow-sm hover:bg-[#00B900]/20">
                     <i class="fab fa-line text-[#00B900] text-2xl"></i>
-                    <span class="text-[10px] font-bold text-[#00B900] uppercase tracking-wider mt-1">LINE</span>
+                    <span class="text-[10px] font-bold text-[#00B900] uppercase tracking-wider mt-1">ส่ง LINE (PDF)</span>
                 </button>
-                <button onclick="shareResult('table', 'messenger'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#0084FF]/10 rounded-2xl border border-[#0084FF]/20 active:scale-95 transition-all shadow-sm hover:bg-[#0084FF]/20">
+                <button onclick="exportTableToPDF('share'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#0084FF]/10 rounded-2xl border border-[#0084FF]/20 active:scale-95 transition-all shadow-sm hover:bg-[#0084FF]/20">
                     <i class="fab fa-facebook-messenger text-[#0084FF] text-2xl"></i>
-                    <span class="text-[10px] font-bold text-[#0084FF] uppercase tracking-wider mt-1">Messenger</span>
+                    <span class="text-[10px] font-bold text-[#0084FF] uppercase tracking-wider mt-1">ส่ง Messenger (PDF)</span>
                 </button>
                 <button onclick="exportTableToPDF('print'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-slate-100 rounded-2xl border border-slate-200 active:scale-95 transition-all shadow-sm hover:bg-slate-200">
                     <i class="fas fa-print text-slate-600 text-2xl"></i>
@@ -1629,6 +1629,9 @@ A90/20,Female,64,11,415.0`;
                 // ตรวจสอบสถานะของตัวเลือกแสดงจุดคุ้มทุนจากหน้าจอ
                 const showBreakeven = document.getElementById('toggleBreakeven')?.checked;
                 let beRowIndex = -1;
+                let beAgeStr = '';
+                let beYearStr = '';
+                let beCVStr = '';
 
                 trs.forEach((tr, index) => {
                     const tds = tr.querySelectorAll('td');
@@ -1638,18 +1641,22 @@ A90/20,Female,64,11,415.0`;
                     });
                     tableRows.push(rowData);
                     
-                    if (showBreakeven && tr.classList.contains('breakeven-target')) {
+                    // ดึงข้อมูลแถวที่เป็นจุดคุ้มทุน
+                    if (tr.classList.contains('breakeven-target')) {
                         beRowIndex = index;
+                        beAgeStr = rowData[0];
+                        beYearStr = beAgeStr - d.age;
+                        beCVStr = rowData[3];
                     }
                 });
 
                 // ใช้ autoTable รวดเดียว ให้มันแบ่งหน้าอัตโนมัติ (จะได้ตารางติดกัน ไม่ตัดขาด)
                 doc.autoTable({
-                    startY: 28, // เริ่มใต้ Header กระดาษ
+                    startY: (showBreakeven && beRowIndex !== -1) ? 32 : 26, // ถ้าแสดงจุดคุ้มทุน ขยับตารางลงมาเผื่อข้อความ
                     head: [['อายุ', 'เงินออมรายปี', 'เงินออมสะสม', 'เงินสดพร้อมใช้']],
                     body: tableRows,
                     theme: 'plain', // ใช้แบบ plain เพื่อตีเส้นเองให้เหมือนในหน้าเว็บ
-                    margin: { top: 28, bottom: 15, left: 15, right: 15 },
+                    margin: { top: 26, bottom: 15, left: 15, right: 15 },
                     styles: { 
                         font: fontName, 
                         fontSize: 10,
@@ -1686,7 +1693,7 @@ A90/20,Female,64,11,415.0`;
                                 data.cell.styles.fontStyle = 'bold';
                             }
 
-                            // แถวเป้าหมาย (Breakeven)
+                            // แถวเป้าหมาย (Breakeven) - แสดงก็ต่อเมื่อเปิดสวิตช์ในหน้าจอ
                             if (showBreakeven && data.row.index === beRowIndex) {
                                 data.cell.styles.fillColor = [236, 253, 245]; // bg-emerald-50
                                 data.cell.styles.textColor = [6, 95, 70]; // text-[#065f46]
@@ -1705,6 +1712,14 @@ A90/20,Female,64,11,415.0`;
                         doc.setFontSize(16);
                         doc.setTextColor(255, 255, 255); // สีขาว
                         doc.text('CI Extra Plus', 105, 13, { align: 'center' });
+                        
+                        // แสดงข้อความสรุปจุดคุ้มทุนบน PDF หน้าแรก หากเปิดสวิตช์
+                        if (data.pageNumber === 1 && showBreakeven && beRowIndex !== -1) {
+                            doc.setFont(fontName, 'bold');
+                            doc.setFontSize(10.5);
+                            doc.setTextColor(6, 95, 70); // emerald-800
+                            doc.text(`🎯 จุดคุ้มทุน: ปีที่ ${beYearStr} (อายุ ${beAgeStr} ปี) | เงินสดพร้อมใช้: ${beCVStr} บาท`, 105, 27, { align: 'center' });
+                        }
                     }
                 });
 
@@ -1720,13 +1735,27 @@ A90/20,Female,64,11,415.0`;
                     doc.text(`หน้า ${i} / ${pageCount}`, 195, 290, { align: 'right' });
                 }
 
-                // เลือกการดำเนินการ (บันทึก หรือ สั่งพิมพ์)
+                // เลือกการดำเนินการ (บันทึก, สั่งพิมพ์ หรือ แชร์เป็นไฟล์)
                 if (actionType === 'print') {
                     doc.autoPrint();
                     const pdfBlobUrl = doc.output('bloburl');
                     window.open(pdfBlobUrl, '_blank');
+                } else if (actionType === 'share') {
+                    const pdfBlob = doc.output('blob');
+                    const file = new File([pdfBlob], `CI_Extra_Plus_ตารางมูลค่า_อายุ${d.age}.pdf`, { type: 'application/pdf' });
+                    
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        navigator.share({
+                            files: [file],
+                            title: 'ตารางมูลค่า CI Extra Plus',
+                            text: 'ตารางมูลค่า CI Extra Plus'
+                        }).catch(err => console.log('Share failed:', err));
+                    } else {
+                        showCustomError("เบราว์เซอร์ไม่รองรับการแชร์ไฟล์โดยตรง ระบบจะทำการดาวน์โหลดแทน");
+                        doc.save(`CI_Extra_Plus_ตารางมูลค่า_อายุ${d.age}.pdf`);
+                    }
                 } else {
-                    doc.save(`CI_Extra_Plus_Table_Age${d.age}.pdf`);
+                    doc.save(`CI_Extra_Plus_ตารางมูลค่า_อายุ${d.age}.pdf`);
                 }
 
             } catch (error) {
@@ -2050,14 +2079,15 @@ A90/20,Female,64,11,415.0`;
                 const sumStr = formatNum(d.sum); 
                 let text = `📊 ตารางมูลค่า CI Extra Plus\nเพศ${d.gender} อายุ ${d.age} ปี\nออม ${Math.round(d.premium).toLocaleString()} บ./ปี (${d.years} ปี)\nทุน ${sumStr} บ.\n\n`; 
                 
+                const showBreakeven = document.getElementById('toggleBreakeven')?.checked;
                 const tableBody = document.getElementById('policyTableBody');
                 const beRow = tableBody.querySelector('.breakeven-target');
-                if (beRow) {
+                
+                // แสดงข้อความจุดคุ้มทุน เมื่อเปิดสวิตช์ไว้เท่านั้น
+                if (showBreakeven && beRow) {
                     const tds = beRow.querySelectorAll('td');
                     const beAge = tds[0].innerText.trim();
                     text += `🎯 จุดคุ้มทุน ปีที่ ${beAge - d.age} (อายุ ${beAge} ปี)\nพร้อมใช้ ${tds[3].innerText} บ.\n\n`;
-                } else {
-                    text += `ℹ️ ไม่พบจุดคุ้มทุนก่อนครบกำหนดสัญญา\n\n`;
                 }
                 
                 text += `📌 ตัวอย่างมูลค่า:\n`;
@@ -2095,21 +2125,27 @@ A90/20,Female,64,11,415.0`;
             if (platform === 'line') {
                 window.open('https://line.me/R/msg/text/?' + encodeURIComponent(text), '_blank');
             } else if (platform === 'messenger') {
-                const el = document.createElement('textarea'); 
-                el.value = text; 
-                document.body.appendChild(el); 
-                el.select(); 
-                document.execCommand('copy'); 
-                document.body.removeChild(el); 
-                const toast = document.createElement('div'); 
-                toast.className = "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-900/95 text-white px-8 py-6 rounded-3xl text-sm font-bold z-[1000] shadow-2xl text-center backdrop-blur-sm transition-all"; 
-                toast.innerHTML = `<div class="w-14 h-14 bg-blue-800 rounded-full flex items-center justify-center mx-auto mb-3"><i class='fab fa-facebook-messenger text-2xl'></i></div><span class="text-base block">คัดลอกแล้ว</span><span class='text-[11px] font-normal opacity-90 block'>กำลังเปิดแอป Messenger...</span>`; 
-                document.body.appendChild(toast); 
-                setTimeout(() => { 
-                    toast.style.opacity = "0"; 
-                    setTimeout(() => toast.remove(), 300); 
-                    window.open('https://www.messenger.com/', '_blank'); 
-                }, 1500);
+                // ใช้ Web Share API เพื่อให้เด้งไปที่แอป Messenger ได้โดยตรงบนมือถือ (เนียนเหมือน LINE)
+                if (navigator.share) {
+                    navigator.share({ text: text }).catch(err => console.log('Share failed:', err));
+                } else {
+                    // หากอุปกรณ์ไม่รองรับการแชร์ (เช่น บนคอมพิวเตอร์) ให้ใช้วิธีคัดลอกแทน
+                    const el = document.createElement('textarea'); 
+                    el.value = text; 
+                    document.body.appendChild(el); 
+                    el.select(); 
+                    document.execCommand('copy'); 
+                    document.body.removeChild(el); 
+                    const toast = document.createElement('div'); 
+                    toast.className = "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-900/95 text-white px-8 py-6 rounded-3xl text-sm font-bold z-[1000] shadow-2xl text-center backdrop-blur-sm transition-all"; 
+                    toast.innerHTML = `<div class="w-14 h-14 bg-blue-800 rounded-full flex items-center justify-center mx-auto mb-3"><i class='fab fa-facebook-messenger text-2xl'></i></div><span class="text-base block">คัดลอกข้อความแล้ว</span><span class='text-[11px] font-normal opacity-90 block'>กรุณาวางข้อความในช่องแชท</span>`; 
+                    document.body.appendChild(toast); 
+                    setTimeout(() => { 
+                        toast.style.opacity = "0"; 
+                        setTimeout(() => toast.remove(), 300); 
+                        window.open('https://www.messenger.com/', '_blank'); 
+                    }, 1500);
+                }
             }
         }
 

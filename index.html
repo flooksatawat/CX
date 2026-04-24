@@ -8,8 +8,6 @@
     <!-- Library เป็น jsPDF และ AutoTable -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-    <!-- เพิ่ม LIFF SDK -->
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -955,17 +953,17 @@
             <h3 class="text-xl font-bold text-slate-800 mb-6">ดำเนินการกับข้อมูล</h3>
             
             <div class="grid grid-cols-3 gap-3 mb-4">
-                <button onclick="exportTableToPDF('sendToLineChat'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#00B900]/10 rounded-2xl border border-[#00B900]/20 active:scale-95 transition-all shadow-sm hover:bg-[#00B900]/20">
+                <button onclick="shareResult('all', 'line'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#00B900]/10 rounded-2xl border border-[#00B900]/20 active:scale-95 transition-all shadow-sm hover:bg-[#00B900]/20">
                     <i class="fab fa-line text-[#00B900] text-2xl"></i>
-                    <span class="text-[10px] font-bold text-[#00B900] uppercase tracking-wider mt-1">ส่งเข้าแชท</span>
+                    <span class="text-[10px] font-bold text-[#00B900] uppercase tracking-wider mt-1">LINE</span>
                 </button>
-                <button onclick="exportTableToPDF('share'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#0084FF]/10 rounded-2xl border border-[#0084FF]/20 active:scale-95 transition-all shadow-sm hover:bg-[#0084FF]/20">
+                <button onclick="shareResult('all', 'messenger'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-[#0084FF]/10 rounded-2xl border border-[#0084FF]/20 active:scale-95 transition-all shadow-sm hover:bg-[#0084FF]/20">
                     <i class="fab fa-facebook-messenger text-[#0084FF] text-2xl"></i>
-                    <span class="text-[10px] font-bold text-[#0084FF] uppercase tracking-wider mt-1">แชร์/ส่งต่อ</span>
+                    <span class="text-[10px] font-bold text-[#0084FF] uppercase tracking-wider mt-1">Messenger</span>
                 </button>
                 <button onclick="exportTableToPDF('print'); closePopup('pdfOptionsModal')" class="w-full flex flex-col justify-center items-center gap-2 p-3 bg-slate-100 rounded-2xl border border-slate-200 active:scale-95 transition-all shadow-sm hover:bg-slate-200">
                     <i class="fas fa-print text-slate-600 text-2xl"></i>
-                    <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mt-1">พิมพ์ PDF</span>
+                    <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mt-1">พิมพ์</span>
                 </button>
             </div>
             
@@ -1020,30 +1018,7 @@
         </div>
     </div>
 
-    <!-- Modal แจ้งเตือนเปิดผ่าน LINE -->
-    <div id="liffWarningModal" class="fixed inset-0 z-[800] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
-        <div class="bg-white rounded-[30px] p-6 text-center shadow-2xl w-full max-w-sm transform scale-95 transition-transform duration-300">
-            <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fab fa-line text-3xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-800 mb-2">ใช้งานผ่านแอป LINE</h3>
-            <p class="text-sm text-slate-600 mb-6 leading-relaxed">
-                แอป LINE ไม่อนุญาตให้ดาวน์โหลดไฟล์ PDF โดยตรง<br><br>
-                กรุณากดที่ไอคอน <strong class="text-slate-800">3 จุด (⋮) หรือ (⋯)</strong> มุมขวาบน<br>แล้วเลือก <strong class="text-slate-800">"เปิดในเบราว์เซอร์เริ่มต้น"</strong><br>(Open in Browser) เพื่อดาวน์โหลด
-            </p>
-            <button onclick="closePopup('liffWarningModal')" class="w-full bg-slate-100 text-slate-700 p-4 rounded-2xl font-bold active:scale-95 transition-all text-sm hover:bg-slate-200">
-                เข้าใจแล้ว
-            </button>
-        </div>
-    </div>
-
     <script>
-        // ==========================================
-        // ตั้งค่าระบบ LINE LIFF & Webhook
-        // ==========================================
-        const LIFF_ID = "2009833376-ZabcbT7t"; // ใส่ LIFF ID ของคุณ (ตัวอย่าง: 165xxxxxxxx-xxxxxxx)
-        const LIFF_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbysN-YHxoqNf-_MSYKVk1nW0LhmgCtk6hg56N9gMK6B_2waByw_YwV-uTkalcLPitYC/exec"; // ใส่ URL ของ Google Apps Script ที่ Deploy เสร็จแล้ว
-
         const setText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
         const formatNum = (num) => { const rounded = Math.round(num * 100) / 100; return Number.isInteger(rounded) ? rounded.toLocaleString() : rounded.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); };
         let currentPlan = '20CX', currentGender = 'male', lastCalculationData = null, currentMode = 'sum';
@@ -1622,7 +1597,7 @@ A90/20,Female,64,11,415.0`;
             // แจ้งเตือนกำลังสร้าง
             const toast = document.createElement('div'); 
             toast.className = "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-900 text-white px-8 py-5 rounded-2xl text-sm font-bold z-[1000] shadow-2xl text-center backdrop-blur-sm transition-all"; 
-            toast.innerHTML = `<i class='fas fa-spinner fa-spin mb-3 block text-3xl'></i><span id="pdfToastText">กำลังประมวลผล PDF...</span>`; 
+            toast.innerHTML = `<i class='fas fa-spinner fa-spin mb-3 block text-3xl'></i><span>กำลังประมวลผล PDF...</span>`; 
             document.body.appendChild(toast); 
 
             try {
@@ -1654,9 +1629,6 @@ A90/20,Female,64,11,415.0`;
                 // ตรวจสอบสถานะของตัวเลือกแสดงจุดคุ้มทุนจากหน้าจอ
                 const showBreakeven = document.getElementById('toggleBreakeven')?.checked;
                 let beRowIndex = -1;
-                let beAgeStr = '';
-                let beYearStr = '';
-                let beCVStr = '';
 
                 trs.forEach((tr, index) => {
                     const tds = tr.querySelectorAll('td');
@@ -1666,87 +1638,73 @@ A90/20,Female,64,11,415.0`;
                     });
                     tableRows.push(rowData);
                     
-                    // ดึงข้อมูลแถวที่เป็นจุดคุ้มทุน
-                    if (tr.classList.contains('breakeven-target')) {
+                    if (showBreakeven && tr.classList.contains('breakeven-target')) {
                         beRowIndex = index;
-                        beAgeStr = rowData[0];
-                        beYearStr = beAgeStr - d.age;
-                        beCVStr = rowData[3];
                     }
                 });
 
-                // ใช้ autoTable รวดเดียว ให้มันแบ่งหน้าอัตโนมัติ (จะได้ตารางติดกัน ไม่ตัดขาด)
-                doc.autoTable({
-                    startY: (showBreakeven && beRowIndex !== -1) ? 32 : 26, // ถ้าแสดงจุดคุ้มทุน ขยับตารางลงมาเผื่อข้อความ
-                    head: [['อายุ', 'เงินออมรายปี', 'เงินออมสะสม', 'เงินสดพร้อมใช้']],
-                    body: tableRows,
-                    theme: 'plain', // ใช้แบบ plain เพื่อตีเส้นเองให้เหมือนในหน้าเว็บ
-                    margin: { top: 26, bottom: 15, left: 15, right: 15 },
-                    styles: { 
-                        font: fontName, 
-                        fontSize: 10,
-                        halign: 'center',
-                        valign: 'middle',
-                        cellPadding: 1.5,
-                        minCellHeight: 4.8 // ความสูงเซลล์ เพื่อให้ได้ประมาณ 50 แถวต่อหน้า A4
-                    },
-                    headStyles: { 
-                        fillColor: [248, 250, 252], // bg-slate-50
-                        textColor: [100, 116, 139], // slate-500
-                        fontStyle: 'bold',
-                        lineWidth: { top: 0, bottom: 0.1, left: 0, right: 0 },
-                        lineColor: [226, 232, 240] // border-slate-200
-                    },
-                    bodyStyles: { 
-                        textColor: [71, 85, 105], // slate-600
-                        lineWidth: { top: 0, bottom: 0.1, left: 0, right: 0 },
-                        lineColor: [241, 245, 249] // slate-100
-                    },
-                    didParseCell: function (data) {
-                        // สีข้อความใน Header ให้เหมือนหน้าเว็บ
-                        if (data.section === 'head') {
-                            if (data.column.index === 2) data.cell.styles.textColor = [37, 99, 235]; // text-blue-600
-                            if (data.column.index === 3) data.cell.styles.textColor = [217, 119, 6]; // text-amber-600
-                        }
-                        
-                        // สีข้อความใน Body ให้เหมือน UI
-                        if (data.section === 'body') {
-                            if (data.column.index === 0) data.cell.styles.fontStyle = 'bold'; // อายุ
-                            if (data.column.index === 2) data.cell.styles.textColor = [37, 99, 235]; // text-blue-600
-                            if (data.column.index === 3) {
-                                data.cell.styles.textColor = [217, 119, 6]; // text-amber-600
-                                data.cell.styles.fontStyle = 'bold';
-                            }
-
-                            // แถวเป้าหมาย (Breakeven) - แสดงก็ต่อเมื่อเปิดสวิตช์ในหน้าจอ
-                            if (showBreakeven && data.row.index === beRowIndex) {
-                                data.cell.styles.fillColor = [236, 253, 245]; // bg-emerald-50
-                                data.cell.styles.textColor = [6, 95, 70]; // text-[#065f46]
-                                data.cell.styles.fontStyle = 'bold';
-                                data.cell.styles.lineWidth = { top: 0.3, bottom: 0.3, left: 0, right: 0 };
-                                data.cell.styles.lineColor = [16, 185, 129]; // border-emerald-500
-                            }
-                        }
-                    },
-                    didDrawPage: function (data) {
-                        // จัดการส่วนหัวของกระดาษ (Header) แบบมีพื้นหลังแบนเนอร์ ในทุกๆ หน้า
-                        doc.setFillColor(30, 58, 138); // สีกรมท่า (blue-900)
-                        doc.rect(0, 0, 210, 20, 'F');
-
-                        doc.setFont(fontName, 'bold');
-                        doc.setFontSize(16);
-                        doc.setTextColor(255, 255, 255); // สีขาว
-                        doc.text('CI Extra Plus', 105, 13, { align: 'center' });
-                        
-                        // แสดงข้อความสรุปจุดคุ้มทุนบน PDF หน้าแรก หากเปิดสวิตช์
-                        if (data.pageNumber === 1 && showBreakeven && beRowIndex !== -1) {
-                            doc.setFont(fontName, 'bold');
-                            doc.setFontSize(10.5);
-                            doc.setTextColor(6, 95, 70); // emerald-800
-                            doc.text(`🎯 จุดคุ้มทุน: ปีที่ ${beYearStr} (อายุ ${beAgeStr} ปี) | เงินสดพร้อมใช้: ${beCVStr} บาท`, 105, 27, { align: 'center' });
-                        }
+                // แบ่งข้อมูลเป็นหน้าละ 50 บรรทัด
+                const rowsPerPage = 50;
+                
+                for (let i = 0; i < tableRows.length; i += rowsPerPage) {
+                    const chunk = tableRows.slice(i, i + rowsPerPage);
+                    
+                    if (i > 0) {
+                        doc.addPage();
                     }
-                });
+
+                    // จัดการส่วนหัวของกระดาษ (Header) แบบมีพื้นหลังแบนเนอร์
+                    doc.setFillColor(30, 58, 138); // สีกรมท่า (blue-900)
+                    doc.rect(0, 0, 210, 26, 'F'); // แถบด้านบนให้แคบลงนิดนึง
+
+                    doc.setFont(fontName, 'bold');
+                    doc.setFontSize(22);
+                    doc.setTextColor(255, 255, 255); // สีขาว
+                    doc.text('ตารางมูลค่ากรมธรรม์ CI Extra Plus', 105, 17, { align: 'center' });
+                    
+                    // สร้างตารางด้วย AutoTable สำหรับก้อนปัจจุบัน (Chunk)
+                    doc.autoTable({
+                        startY: 30, // เริ่มให้ชิดขึ้นเพื่อประหยัดพื้นที่
+                        head: [['อายุ', 'เงินออมรายปี', 'เงินออมสะสม', 'เงินสดพร้อมใช้']],
+                        body: chunk,
+                        theme: 'grid',
+                        styles: { 
+                            font: fontName, 
+                            fontSize: 10.5, // เล็กลงนิดหน่อยเพื่อให้จุได้ 50 บรรทัด
+                            halign: 'center',
+                            valign: 'middle',
+                            cellPadding: 1.5, // ลด Padding
+                            lineColor: [226, 232, 240], // slate-200
+                            lineWidth: 0.1,
+                            minCellHeight: 4.8 // บังคับความสูงเพื่อให้ 50 บรรทัดอยู่ในหนึ่งหน้า A4 พอดี
+                        },
+                        headStyles: { 
+                            fillColor: [30, 64, 175], // blue-800
+                            textColor: [255, 255, 255], // ขาว
+                            fontStyle: 'bold',
+                            fontSize: 12,
+                            minCellHeight: 8
+                        },
+                        bodyStyles: { 
+                            textColor: [51, 65, 85] // slate-700
+                        },
+                        alternateRowStyles: {
+                            fillColor: [248, 250, 252] // slate-50
+                        },
+                        didParseCell: function (data) {
+                            // ไฮไลต์บรรทัดจุดคุ้มทุน (ต้องคำนวณ Index รวมของทุกหน้า)
+                            const globalIndex = i + data.row.index;
+                            if (globalIndex === beRowIndex && data.section === 'body') {
+                                data.cell.styles.fillColor = [16, 185, 129]; // emerald-500
+                                data.cell.styles.textColor = [255, 255, 255]; // สีขาว
+                                data.cell.styles.fontStyle = 'bold';
+                            } else if (data.section === 'body' && data.column.index === 3) {
+                                data.cell.styles.textColor = [217, 119, 6]; // amber-600
+                                data.cell.styles.fontStyle = 'bold';
+                            }
+                        }
+                    });
+                }
 
                 // เพิ่มส่วนท้าย (Footer) ระบุหมายเลขหน้า และเส้นคั่นตกแต่ง สำหรับทุกๆ หน้า
                 const pageCount = doc.internal.getNumberOfPages();
@@ -1760,81 +1718,13 @@ A90/20,Female,64,11,415.0`;
                     doc.text(`หน้า ${i} / ${pageCount}`, 195, 290, { align: 'right' });
                 }
 
-                // เลือกการดำเนินการ (บันทึก, สั่งพิมพ์ หรือ แชร์เป็นไฟล์)
-                const fileName = `CI_Extra_Plus_ตารางมูลค่า_อายุ${d.age}.pdf`;
-                const isLineApp = /Line/i.test(navigator.userAgent);
-
-                if (actionType === 'sendToLineChat') {
-                    if (typeof liff === 'undefined' || !liff.isInClient()) {
-                        showCustomError("ฟังก์ชันนี้รองรับเฉพาะการเปิดผ่านแอป LINE เท่านั้น");
-                        return;
-                    }
-                    if (!LIFF_WEBHOOK_URL) {
-                        showCustomError("ยังไม่ได้ตั้งค่า Webhook สำหรับส่งไฟล์");
-                        return;
-                    }
-                    
-                    document.getElementById('pdfToastText').innerText = "กำลังอัปโหลดและส่งเข้าแชท...";
-                    const profile = await liff.getProfile();
-                    const pdfBase64 = doc.output('datauristring').split(',')[1];
-                    
-                    const res = await fetch(LIFF_WEBHOOK_URL, {
-                        method: 'POST',
-                        redirect: 'follow', // ช่วยรองรับระบบของ Google Apps Script
-                        body: JSON.stringify({
-                            userId: profile.userId,
-                            fileName: fileName,
-                            fileData: pdfBase64
-                        })
-                    });
-                    
-                    const result = await res.json();
-                    if (result.status === 'success') {
-                        const successToast = document.createElement('div');
-                        successToast.className = "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-emerald-600 text-white px-8 py-5 rounded-2xl text-sm font-bold z-[1000] shadow-2xl text-center backdrop-blur-sm transition-all";
-                        successToast.innerHTML = `<i class='fas fa-check-circle mb-3 block text-3xl'></i><span>ส่งไฟล์เข้าแชทสำเร็จ!</span>`;
-                        document.body.appendChild(successToast);
-                        setTimeout(() => { successToast.style.opacity = '0'; setTimeout(() => successToast.remove(), 300); }, 2500);
-                    } else {
-                        throw new Error(result.message || "Upload failed");
-                    }
-                } else if (actionType === 'print') {
-                    if (isLineApp) { openPopup('liffWarningModal'); return; }
+                // เลือกการดำเนินการ (บันทึก หรือ สั่งพิมพ์)
+                if (actionType === 'print') {
                     doc.autoPrint();
                     const pdfBlobUrl = doc.output('bloburl');
                     window.open(pdfBlobUrl, '_blank');
-                } else if (actionType === 'share') {
-                    const pdfBlob = doc.output('blob');
-                    const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-                    
-                    // บนมือถือบางรุ่น LINE อนุญาตให้ใช้ Web Share API ได้ (เด้งหน้าต่างแชร์ของเครื่อง)
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try {
-                            await navigator.share({
-                                files: [file],
-                                title: 'ตารางมูลค่า CI Extra Plus',
-                                text: 'ตารางมูลค่า CI Extra Plus'
-                            });
-                        } catch(err) {
-                            console.log('Share failed:', err);
-                        }
-                    } else {
-                        if (isLineApp) {
-                            openPopup('liffWarningModal');
-                        } else {
-                            showCustomError("เบราว์เซอร์ไม่รองรับการแชร์ไฟล์ ระบบจะทำการดาวน์โหลดแทน");
-                            doc.save(fileName);
-                        }
-                    }
                 } else {
-                    // การบันทึก PDF
-                    if (isLineApp) {
-                        // หากเปิดใน LINE In-App Browser ให้เด้ง Modal แจ้งเตือน
-                        openPopup('liffWarningModal');
-                    } else {
-                        // การบันทึก PDF สำหรับเบราว์เซอร์ปกติ (Chrome, Safari, ฯลฯ)
-                        doc.save(fileName);
-                    }
+                    doc.save(`CI_Extra_Plus_Table_Age${d.age}.pdf`);
                 }
 
             } catch (error) {
@@ -2126,7 +2016,7 @@ A90/20,Female,64,11,415.0`;
         function handleGenericShare(platform) {
             if (currentShareType === 'diseaseList') {
                 shareDiseaseList(platform);
-            } else if (currentShareType === 'premium' || currentShareType === 'all' || currentShareType === 'table') {
+            } else if (currentShareType === 'premium' || currentShareType === 'all') {
                 if (platform === 'copy') {
                     handleCopyAndClose(currentShareType);
                 } else {
@@ -2153,39 +2043,6 @@ A90/20,Female,64,11,415.0`;
         function generateResultText(type) {
             if (!lastCalculationData) return '';
             const d = lastCalculationData;
-            
-            if (type === 'table') {
-                const sumStr = formatNum(d.sum); 
-                let text = `📊 ตารางมูลค่า CI Extra Plus\nเพศ${d.gender} อายุ ${d.age} ปี\nออม ${Math.round(d.premium).toLocaleString()} บ./ปี (${d.years} ปี)\nทุน ${sumStr} บ.\n\n`; 
-                
-                const showBreakeven = document.getElementById('toggleBreakeven')?.checked;
-                const tableBody = document.getElementById('policyTableBody');
-                const beRow = tableBody.querySelector('.breakeven-target');
-                
-                // แสดงข้อความจุดคุ้มทุน เมื่อเปิดสวิตช์ไว้เท่านั้น
-                if (showBreakeven && beRow) {
-                    const tds = beRow.querySelectorAll('td');
-                    const beAge = tds[0].innerText.trim();
-                    text += `🎯 จุดคุ้มทุน ปีที่ ${beAge - d.age} (อายุ ${beAge} ปี)\nพร้อมใช้ ${tds[3].innerText} บ.\n\n`;
-                }
-                
-                text += `📌 ตัวอย่างมูลค่า:\n`;
-                const trs = tableBody.querySelectorAll('tr');
-                const maxYear = 90 - d.age;
-                const payYears = parseInt(d.years);
-                const milestones = [payYears, payYears + 10, maxYear];
-                let addedYears = new Set();
-                trs.forEach((tr, idx) => {
-                    const year = idx + 1;
-                    if (milestones.includes(year) && !addedYears.has(year)) {
-                        const tds = tr.querySelectorAll('td');
-                        text += `ปีที่ ${year} (อายุ ${tds[0].innerText.trim()}): ${tds[3].innerText} บ.\n`;
-                        addedYears.add(year);
-                    }
-                });
-                return text;
-            }
-
             if (type === 'premium') return `${Math.round(d.premium).toLocaleString()}`;
             
             const sumStr = formatNum(d.sum); 
@@ -2204,27 +2061,21 @@ A90/20,Female,64,11,415.0`;
             if (platform === 'line') {
                 window.open('https://line.me/R/msg/text/?' + encodeURIComponent(text), '_blank');
             } else if (platform === 'messenger') {
-                // ใช้ Web Share API เพื่อให้เด้งไปที่แอป Messenger ได้โดยตรงบนมือถือ (เนียนเหมือน LINE)
-                if (navigator.share) {
-                    navigator.share({ text: text }).catch(err => console.log('Share failed:', err));
-                } else {
-                    // หากอุปกรณ์ไม่รองรับการแชร์ (เช่น บนคอมพิวเตอร์) ให้ใช้วิธีคัดลอกแทน
-                    const el = document.createElement('textarea'); 
-                    el.value = text; 
-                    document.body.appendChild(el); 
-                    el.select(); 
-                    document.execCommand('copy'); 
-                    document.body.removeChild(el); 
-                    const toast = document.createElement('div'); 
-                    toast.className = "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-900/95 text-white px-8 py-6 rounded-3xl text-sm font-bold z-[1000] shadow-2xl text-center backdrop-blur-sm transition-all"; 
-                    toast.innerHTML = `<div class="w-14 h-14 bg-blue-800 rounded-full flex items-center justify-center mx-auto mb-3"><i class='fab fa-facebook-messenger text-2xl'></i></div><span class="text-base block">คัดลอกข้อความแล้ว</span><span class='text-[11px] font-normal opacity-90 block'>กรุณาวางข้อความในช่องแชท</span>`; 
-                    document.body.appendChild(toast); 
-                    setTimeout(() => { 
-                        toast.style.opacity = "0"; 
-                        setTimeout(() => toast.remove(), 300); 
-                        window.open('https://www.messenger.com/', '_blank'); 
-                    }, 1500);
-                }
+                const el = document.createElement('textarea'); 
+                el.value = text; 
+                document.body.appendChild(el); 
+                el.select(); 
+                document.execCommand('copy'); 
+                document.body.removeChild(el); 
+                const toast = document.createElement('div'); 
+                toast.className = "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-900/95 text-white px-8 py-6 rounded-3xl text-sm font-bold z-[1000] shadow-2xl text-center backdrop-blur-sm transition-all"; 
+                toast.innerHTML = `<div class="w-14 h-14 bg-blue-800 rounded-full flex items-center justify-center mx-auto mb-3"><i class='fab fa-facebook-messenger text-2xl'></i></div><span class="text-base block">คัดลอกแล้ว</span><span class='text-[11px] font-normal opacity-90 block'>กำลังเปิดแอป Messenger...</span>`; 
+                document.body.appendChild(toast); 
+                setTimeout(() => { 
+                    toast.style.opacity = "0"; 
+                    setTimeout(() => toast.remove(), 300); 
+                    window.open('https://www.messenger.com/', '_blank'); 
+                }, 1500);
             }
         }
 
@@ -2273,24 +2124,10 @@ A90/20,Female,64,11,415.0`;
         }
 
         // --- ตั้งค่า Gemini API สำหรับดึงข้อมูลเรียลไทม์ ---
-        const apiKey = ""; // ห้ามลบหรือแก้ไขบรรทัดนี้: ระบบ Canvas จะแทรก API Key ชั่วคราวให้ที่นี่
-        const userApiKey = "AIzaSyBlGHKpNuoWvnjBlI-MhNSGdwdkfSp79ZQ"; // API Key ของคุณสำหรับการใช้งานบน Github
-        
+        const apiKey = "";
+
         async function fetchGeminiData(prompt) {
-            const isExternal = window.location.hostname.includes("github.io") || 
-                               window.location.hostname === "localhost" || 
-                               window.location.hostname === "127.0.0.1" || 
-                               window.location.protocol === "file:";
-
-            let url;
-            if (isExternal) {
-                // สำหรับ Github / Local จะใช้ API Key ของคุณ และโมเดลที่รองรับ Public Key
-                url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`;
-            } else {
-                // สำหรับระบบ Canvas บังคับให้ต้องใช้โครงสร้างนี้แบบเป๊ะๆ เพื่อให้ระบบแทรก Key ชั่วคราวให้
-                url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            }
-
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
             const payload = {
                 contents: [{ parts: [{ text: prompt }] }],
                 systemInstruction: { parts: [{ text: "คุณคือผู้เชี่ยวชาญด้านประกันสุขภาพและสถิติการแพทย์ในประเทศไทย ช่วยให้ข้อมูลสั้นๆ กระชับ รูปแบบ HTML น่าอ่าน เน้นความจริงจังแต่นำเสนอเข้าใจง่าย" }] }
@@ -2312,7 +2149,6 @@ A90/20,Female,64,11,415.0`;
                     }
                     return null;
                 } catch (e) {
-                    console.error("Gemini API Error:", e);
                     if (i === delays.length) return null;
                     await new Promise(r => setTimeout(r, delays[i]));
                 }
@@ -2475,22 +2311,12 @@ A90/20,Female,64,11,415.0`;
             if (e.target.closest('button, input, select, textarea, a, .clickable-row, .interactive-btn')) return;
         }
 
-        window.onload = async () => { 
+        window.onload = () => { 
             document.querySelectorAll('[id$="Modal"]').forEach(modal => {
                 if (modal.classList.contains('fixed') && modal.classList.contains('opacity-0')) {
                     modal.classList.add('hidden');
                 }
             });
-
-            // เริ่มต้นระบบ LIFF อัตโนมัติ (หากตั้งค่า LIFF_ID ไว้)
-            if (typeof liff !== 'undefined' && LIFF_ID) {
-                try {
-                    await liff.init({ liffId: LIFF_ID });
-                } catch(e) {
-                    console.error('LIFF Init Error:', e);
-                }
-            }
-
             // โหลดข้อมูล CV จาก Github หรือใช้ตัวสำรอง
             fetchCVData();
             calculate('sum'); 
